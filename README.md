@@ -1,132 +1,50 @@
-# 1
 ```ts
-import { Injectable } from '@nestjs/common';
-import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
+import { useState, useEffect } from "react";
+import { useInView } from "react-intersection-observer";
 
-class User {
-  id: number;
-  name: string;
+interface LazyImageProps {
+  src: string;
+  alt: string;
 }
 
-@Injectable()
-export class UserRepository {
-  async findOne(id: number): Promise<User> {
-    const user = { id: 11, name: 'Alice' };
-    return user;
-  }
-}
+const LazyImage = ({ src, alt }: LazyImageProps) => {
+  console.log("src: ", src)
+  console.log("alt: ", alt)
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const { ref, inView } = useInView({
+    threshold: 0, // khi ảnh hiển thị trong viewport (threshold = 0), sẽ bắt đầu tải ảnh
+    triggerOnce: true, // chỉ tải ảnh một lần
+  });
 
-@Injectable()
-export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
-
-  async getUserById(id: number): Promise<User> {
-    const user = await this.userRepository.findOne(id);
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+  useEffect(() => {
+    if (inView) {
+      const image = new Image();
+      image.src = src;
+      image.onload = () => {
+        setLoaded(true);
+      };
+      image.onerror = () => {
+        setError(true);
+      };
     }
-    return user;
-  }
-}
+  }, [inView, src]);
+
+  return (
+    <div ref={ref}>
+      {error && <span>Failed to load image</span>}
+      {!loaded && !error && <span>Loading image...</span>}
+      {loaded && <img src={src} alt={alt} />}
+    </div>
+  );
+};
+
+export default LazyImage;
 ```
 
-```ts
-import { NotFoundException } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import { UserRepository, UserService } from './test.service';
-
-describe('UserService', () => {
-  let userService: UserService;
-  let userRepository: UserRepository;
-
-  beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      providers: [UserService, UserRepository]
-    }).compile();
-
-    userService = moduleRef.get<UserService>(UserService);
-    userRepository = moduleRef.get<UserRepository>(UserRepository);
-  });
-
-  describe('getUserById', () => {
-    it('should return user if found', async () => {
-      const user = { id: 1, name: 'Alice' };
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(user);
-
-      const result = await userService.getUserById(user.id);
-
-      expect(result).toEqual(user);
-      expect(userRepository.findOne).toHaveBeenCalledWith(user.id);
-    });
-
-    it('should throw NotFoundException if user not found', async () => {
-      const id = 2;
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(undefined);
-
-      await expect(userService.getUserById(id)).rejects.toThrow(
-        new NotFoundException(`User with ID ${id} not found`)
-      );
-      expect(userRepository.findOne).toHaveBeenCalledWith(id);
-    });
-  });
-});
-```
-
-# 2
-```ts
-export class Calculator {
-  add(a: number, b: number): number {
-    return a + b;
-  }
-
-  subtract(a: number, b: number): number {
-    return a - b;
-  }
-
-  multiply(a: number, b: number): number {
-    return a * b;
-  }
-
-  divide(a: number, b: number): number {
-    if (b === 0) {
-      throw new Error('Divide by zero');
-    }
-    return a / b;
-  }
-}
-```
-
-```ts
-import { Calculator } from './calculator';
-
-describe('Calculator', () => {
-  let calculator: Calculator;
-
-  beforeEach(() => {
-    calculator = new Calculator();
-  });
-
-  describe('add', () => {
-    it('should return sum of two numbers', () => {
-      const a = 2;
-      const b = 3;
-
-      const result = calculator.add(a, b);
-
-      expect(result).toBeLessThanOrEqual(4);
-    });
-  });
-
-  describe('subtract', () => {
-    // test case for subtract method
-  });
-
-  describe('multiply', () => {
-    // test case for multiply method
-  });
-
-  describe('divide', () => {
-    // test case for divide method
-  });
-});
+```html
+<div>
+  <LazyImage src="/next.svg" alt="My Image" />
+  <p>Some other content on my page.</p>
+</div>
 ```
