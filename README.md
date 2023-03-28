@@ -1,3 +1,27 @@
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Lint Dockerfile with Dockle
+      uses: docker/dockerfile-lint-action@v3
+      with:
+        files: Dockerfile
+        args: --ignore DL3008
+    - name: Scan Docker image with Trivy
+      uses: aquasecurity/trivy-action@v2
+      with:
+        image-ref: your-docker-image-name:latest
+        format: table
 ```ts
 import { useState, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
