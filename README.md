@@ -48,3 +48,41 @@ export default LazyImage;
   <p>Some other content on my page.</p>
 </div>
 ```
+```yml
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Use Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14.x'
+    - name: Install dependencies
+      run: yarn install
+    - name: Lint
+      run: yarn lint
+    - name: Test
+      run: |
+        yarn test:coverage
+        if [ $(echo "$(jq '.total.lines.total' coverage/coverage-summary.json) > 50" | bc -l) -eq 0 ]
+        then
+          echo "Test coverage below 50%"
+          exit 1
+        fi
+    - name: Build
+      run: yarn build
+    - name: Upload code coverage report
+      uses: codecov/codecov-action@v2.1.0
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+```
